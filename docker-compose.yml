@@ -1,0 +1,83 @@
+version: '3.8'
+services:
+
+  earth_surface_1:
+    build:
+      context: ./
+      dockerfile: dockerfile/Dockerfile
+    container_name: "earth_surface_1"
+    networks:
+      earth_surface_net:
+        ipv6_address: fd00:1:85a3::1
+    ports:
+      - "50100:5001/tcp"
+      - "50100:5001/udp"
+    tty: true
+
+  earth_orbit_1:
+    build:
+      context: ./
+      dockerfile: dockerfile/Dockerfile
+    container_name: "earth_orbit_1"
+    networks:
+      earth_orbit_net:
+        ipv6_address: fd00:2:85a3::1
+    ports:
+      - "50101:5001/tcp"
+      - "50101:5001/udp"
+    tty: true
+
+  moon_surface_1:
+    build:
+      context: ./
+      dockerfile: dockerfile/Dockerfile
+    container_name: "moon_surface_1"
+    networks:
+      moon_surface_net:
+        ipv6_address: fd00:3:85a3::1
+    ports:
+      - "50102:5001/tcp"
+      - "50102:5001/udp"
+    tty: true
+
+  moon_orbit_1:
+    build:
+      context: ./
+      dockerfile: dockerfile/Dockerfile
+    container_name: "moon_orbit_1"
+    networks:
+      moon_orbit_net:
+        ipv6_address: fd00:4:85a3::1
+    ports:
+      - "50103:5001/tcp"
+      - "50103:5001/udp"
+    tty: true
+networks:
+
+  earth_surface_net:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd00:1:85a3::/64
+
+  earth_orbit_net:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd00:2:85a3::/64
+
+  moon_surface_net:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd00:3:85a3::/64
+
+  moon_orbit_net:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd00:4:85a3::/64
