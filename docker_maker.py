@@ -1,67 +1,69 @@
 import configparser
+import yaml
+import ipaddress
 
-template_service = """
-  {name}_{index}:
-    build:
-      context: ./
-      dockerfile: dockerfile/Dockerfile
-    container_name: "{name}_{index}"
-    networks:
-      {name}_net:
-        ipv6_address: {ip}
-    ports:
-      - "{external_port}:5001/tcp"
-      - "{external_port}:5001/udp"
-    tty: true
-"""
+CONFIG_FILE = 'emulation_configure.config'
+OUTPUT_FILE = 'docker-compose.yml'
 
-template_network = """
-  {name}_net:
-    driver: bridge
-    enable_ipv6: true
-    ipam:
-      config:
-        - subnet: {subnet}/64
-"""
-
-def generate_docker_compose(filename="emulation_configure.config"):
+def generate_docker_compose():
     config = configparser.ConfigParser()
-    config.read(filename)
+    config.read(CONFIG_FILE)
 
-    services = ""
-    networks = ""
+    services = {}
+    base_port = 50000
 
-    subnet_changes = {
-        "earth_surface": "fd00:1:85a3::",
-        "earth_orbit": "fd00:2:85a3::",
-        "moon_surface": "fd00:3:85a3::",
-        "moon_orbit": "fd00:4:85a3::"
+    for idx, section in enumerate(config.sections()):
+        start_ipv4 = config.get(section, 'IPv4開始アドレス')
+        sat_num = config.getint(section, '衛星数')
+
+        for i in range(1, sat_num + 1):
+            service_name = f"{section}_{i}"
+            port = base_port + i
+
+            service = {
+                'build': {
+                    'context': './',
+                    'dockerfile': 'dockerfile/Dockerfile'
+                },
+                'container_name': service_name,
+                'networks': {
+                    'fixed_compose_network': {
+                        'ipv4_address': str(ipaddress.ip_address(start_ipv4) + i - 1)
+                    }
+                },
+                'ports': [
+                    f"{port}:5001/tcp",
+                    f"{port}:5001/udp"
+                ],
+                'tty': True
+            }
+
+            services[service_name] = service
+
+        base_port += sat_num  # この行を追加
+
+
+    return {
+        'version': '5.1',
+        'services': services,
+        'networks': {
+            'fixed_compose_network': {
+                'ipam': {
+                    'driver': 'default',
+                    'config': [{
+                        'subnet': '172.20.0.0/16'
+                    }]
+                }
+            }
+        }
     }
 
-    starting_port = 50100  # External starting port
-
-    for section in config.sections():
-        base_ip = subnet_changes[section]
-        count = int(config[section]['衛星数'])
-
-        for i in range(1, count+1):
-            adjusted_ip = ":".join(base_ip.split(":")[:-1]) + f":{i}"
-            services += template_service.format(
-                name=section,
-                index=i,
-                ip=adjusted_ip,
-                external_port=starting_port
-            )
-            starting_port += 1  # Increase external port number
-
-        networks += template_network.format(name=section, subnet=base_ip)
-
-    with open("docker-compose.yml", "w") as f:
-        f.write("version: '3.8'\n")
-        f.write("services:\n")
-        f.write(services)
-        f.write("networks:\n")
-        f.write(networks)
+def main():
+    docker_compose = generate_docker_compose()
+    with open(OUTPUT_FILE, 'w') as file:
+        # Save yaml data
+        yaml_data = yaml.dump(docker_compose, default_flow_style=False, sort_keys=False)
+        file.write(yaml_data)
 
 if __name__ == "__main__":
-    generate_docker_compose()
+    main()

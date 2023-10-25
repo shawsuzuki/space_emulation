@@ -1,83 +1,92 @@
-version: '3.8'
+version: '5.1'
 services:
-
   earth_surface_1:
     build:
       context: ./
       dockerfile: dockerfile/Dockerfile
-    container_name: "earth_surface_1"
+    container_name: earth_surface_1
     networks:
-      earth_surface_net:
-        ipv6_address: fd00:1:85a3::1
+      fixed_compose_network:
+        ipv4_address: 172.20.1.1
     ports:
-      - "50100:5001/tcp"
-      - "50100:5001/udp"
+    - 50001:5001/tcp
+    - 50001:5001/udp
     tty: true
-
+  earth_surface_2:
+    build:
+      context: ./
+      dockerfile: dockerfile/Dockerfile
+    container_name: earth_surface_2
+    networks:
+      fixed_compose_network:
+        ipv4_address: 172.20.1.2
+    ports:
+    - 50002:5001/tcp
+    - 50002:5001/udp
+    tty: true
+  earth_surface_3:
+    build:
+      context: ./
+      dockerfile: dockerfile/Dockerfile
+    container_name: earth_surface_3
+    networks:
+      fixed_compose_network:
+        ipv4_address: 172.20.1.3
+    ports:
+    - 50003:5001/tcp
+    - 50003:5001/udp
+    tty: true
   earth_orbit_1:
     build:
       context: ./
       dockerfile: dockerfile/Dockerfile
-    container_name: "earth_orbit_1"
+    container_name: earth_orbit_1
     networks:
-      earth_orbit_net:
-        ipv6_address: fd00:2:85a3::1
+      fixed_compose_network:
+        ipv4_address: 172.20.2.1
     ports:
-      - "50101:5001/tcp"
-      - "50101:5001/udp"
+    - 50004:5001/tcp
+    - 50004:5001/udp
     tty: true
-
   moon_surface_1:
     build:
       context: ./
       dockerfile: dockerfile/Dockerfile
-    container_name: "moon_surface_1"
+    container_name: moon_surface_1
     networks:
-      moon_surface_net:
-        ipv6_address: fd00:3:85a3::1
+      fixed_compose_network:
+        ipv4_address: 172.20.3.1
     ports:
-      - "50102:5001/tcp"
-      - "50102:5001/udp"
+    - 50005:5001/tcp
+    - 50005:5001/udp
     tty: true
-
+  moon_surface_2:
+    build:
+      context: ./
+      dockerfile: dockerfile/Dockerfile
+    container_name: moon_surface_2
+    networks:
+      fixed_compose_network:
+        ipv4_address: 172.20.3.2
+    ports:
+    - 50006:5001/tcp
+    - 50006:5001/udp
+    tty: true
   moon_orbit_1:
     build:
       context: ./
       dockerfile: dockerfile/Dockerfile
-    container_name: "moon_orbit_1"
+    container_name: moon_orbit_1
     networks:
-      moon_orbit_net:
-        ipv6_address: fd00:4:85a3::1
+      fixed_compose_network:
+        ipv4_address: 172.20.5.1
     ports:
-      - "50103:5001/tcp"
-      - "50103:5001/udp"
+    - 50007:5001/tcp
+    - 50007:5001/udp
     tty: true
 networks:
-
-  earth_surface_net:
-    driver: bridge
-    enable_ipv6: true
+  fixed_compose_network:
     ipam:
+      driver: default
       config:
-        - subnet: fd00:1:85a3::/64
-
-  earth_orbit_net:
-    driver: bridge
-    enable_ipv6: true
-    ipam:
-      config:
-        - subnet: fd00:2:85a3::/64
-
-  moon_surface_net:
-    driver: bridge
-    enable_ipv6: true
-    ipam:
-      config:
-        - subnet: fd00:3:85a3::/64
-
-  moon_orbit_net:
-    driver: bridge
-    enable_ipv6: true
-    ipam:
-      config:
-        - subnet: fd00:4:85a3::/64
+      - subnet: 172.20.0.0/16
