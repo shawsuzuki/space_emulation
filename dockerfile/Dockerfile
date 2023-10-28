@@ -9,10 +9,10 @@ EXPOSE 22 5963 5001
 
 RUN apt update
 #RUN apt install build-essential -y
-#RUN apt install wget -y
+RUN apt install wget -y
 RUN apt-get install -y iputils-ping net-tools
-#RUN apt-get install -y iproute2 -y
-#RUN apt-get install -y iperf3
+RUN apt-get install -y iproute2 -y
+RUN apt-get install -y iperf3
 #RUN apt-get install tcpdump -y
 #RUN chmod +s /sbin/tc
 
