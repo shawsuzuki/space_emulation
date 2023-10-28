@@ -52,7 +52,8 @@ def generate_docker_compose():
                     f"{port}:5001/tcp",
                     f"{port}:5001/udp"
                 ],
-                'tty': True
+                'tty': True,
+                'privileged': True
             }
             services[service_name] = service
             current_ip += 1  # increment the IP address for the next container

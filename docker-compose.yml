@@ -12,6 +12,7 @@ services:
     - 50001:5001/tcp
     - 50001:5001/udp
     tty: true
+    privileged: true
   earth_surface_2:
     build:
       context: ./
@@ -24,6 +25,7 @@ services:
     - 50002:5001/tcp
     - 50002:5001/udp
     tty: true
+    privileged: true
   earth_orbit_1:
     build:
       context: ./
@@ -36,6 +38,7 @@ services:
     - 50003:5001/tcp
     - 50003:5001/udp
     tty: true
+    privileged: true
   earth_orbit_2:
     build:
       context: ./
@@ -48,6 +51,7 @@ services:
     - 50004:5001/tcp
     - 50004:5001/udp
     tty: true
+    privileged: true
   earth_orbit_3:
     build:
       context: ./
@@ -60,6 +64,7 @@ services:
     - 50005:5001/tcp
     - 50005:5001/udp
     tty: true
+    privileged: true
   moon_surface_1:
     build:
       context: ./
@@ -72,6 +77,7 @@ services:
     - 50006:5001/tcp
     - 50006:5001/udp
     tty: true
+    privileged: true
   moon_surface_2:
     build:
       context: ./
@@ -84,6 +90,7 @@ services:
     - 50007:5001/tcp
     - 50007:5001/udp
     tty: true
+    privileged: true
   moon_orbit_1:
     build:
       context: ./
@@ -96,6 +103,7 @@ services:
     - 50008:5001/tcp
     - 50008:5001/udp
     tty: true
+    privileged: true
 networks:
   fixed_compose_network:
     ipam:
