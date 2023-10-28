@@ -91,7 +91,7 @@ services:
     container_name: moon_orbit_1
     networks:
       fixed_compose_network:
-        ipv4_address: 172.20.5.1
+        ipv4_address: 172.20.4.1
     ports:
     - 50008:5001/tcp
     - 50008:5001/udp

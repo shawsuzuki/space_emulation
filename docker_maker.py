@@ -1,8 +1,9 @@
+# Version: 1.1
 import configparser
 import yaml
 import ipaddress
 
-CONFIG_FILE = 'emulation_configure.config'
+CONFIG_FILE = 'emulation.config'
 OUTPUT_FILE = 'docker-compose.yml'
 
 def generate_docker_compose():
@@ -11,10 +12,26 @@ def generate_docker_compose():
 
     services = {}
     base_port = 50000
+    used_ip_ranges = []
 
     for idx, section in enumerate(config.sections()):
-        start_ipv4 = config.get(section, 'IPv4開始アドレス')
+        ipv4_cidr = config.get(section, 'IPv4アドレス')
         sat_num = config.getint(section, '衛星数')
+        
+        network = ipaddress.ip_network(ipv4_cidr, strict=False)
+
+        # エラーチェック1: 利用可能なIPアドレス数が足りるか確認
+        if len(list(network.hosts())) < sat_num:
+            raise ValueError(f"{section}のIPアドレス範囲{ipv4_cidr}は要求されるコンテナ数{sat_num}に対して不足しています。")
+        
+        # エラーチェック2: 既に使用されたIPアドレス範囲との重複確認
+        for used_range in used_ip_ranges:
+            if network.overlaps(used_range):
+                raise ValueError(f"{section}のIPアドレス範囲{ipv4_cidr}は既に使用されています。")
+        
+        used_ip_ranges.append(network)
+
+        current_ip = network.network_address + 1  # start from the first usable IP
 
         for i in range(1, sat_num + 1):
             service_name = f"{section}_{i}"
@@ -28,7 +45,7 @@ def generate_docker_compose():
                 'container_name': service_name,
                 'networks': {
                     'fixed_compose_network': {
-                        'ipv4_address': str(ipaddress.ip_address(start_ipv4) + i - 1)
+                        'ipv4_address': str(current_ip)
                     }
                 },
                 'ports': [
@@ -37,11 +54,10 @@ def generate_docker_compose():
                 ],
                 'tty': True
             }
-
             services[service_name] = service
+            current_ip += 1  # increment the IP address for the next container
 
-        base_port += sat_num  # この行を追加
-
+        base_port += sat_num
 
     return {
         'version': '5.1',
@@ -59,11 +75,13 @@ def generate_docker_compose():
     }
 
 def main():
-    docker_compose = generate_docker_compose()
-    with open(OUTPUT_FILE, 'w') as file:
-        # Save yaml data
-        yaml_data = yaml.dump(docker_compose, default_flow_style=False, sort_keys=False)
-        file.write(yaml_data)
+    try:
+        docker_compose = generate_docker_compose()
+        with open(OUTPUT_FILE, 'w') as file:
+            yaml_data = yaml.dump(docker_compose, default_flow_style=False, sort_keys=False)
+            file.write(yaml_data)
+    except ValueError as e:
+        print(f"エラー: {e}")
 
 if __name__ == "__main__":
     main()
