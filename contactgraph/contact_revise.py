@@ -23,10 +23,10 @@ def update_json_with_delay(json_data):
     return json_data
 
 if __name__ == "__main__":
-    with open("input.json", "r") as file:
+    with open("./input/contact-graph.json", "r") as file:
         data = json.load(file)
     
     updated_data = update_json_with_delay(data)
     
-    with open("output.json", "w") as file:
+    with open("./contactgraph/contact-revised.json", "w") as file:
         json.dump(updated_data, file, indent=4)

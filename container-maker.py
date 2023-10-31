@@ -3,7 +3,7 @@ import configparser
 import yaml
 import ipaddress
 
-CONFIG_FILE = 'emulation.config'
+CONFIG_FILE = './input/emulation.config'
 OUTPUT_FILE = 'docker-compose.yml'
 
 def generate_docker_compose():
@@ -40,7 +40,7 @@ def generate_docker_compose():
             service = {
                 'build': {
                     'context': './',
-                    'dockerfile': 'dockerfile/Dockerfile'
+                    'dockerfile': 'input/Dockerfile'
                 },
                 'container_name': service_name,
                 'networks': {

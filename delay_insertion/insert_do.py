@@ -24,7 +24,7 @@ def remove_delay(sender):
     exec_command(f"docker exec {sender} tc qdisc del dev ifb0 root")
 
 def main():
-    with open("output.json", "r") as f:
+    with open("./contactgraph/contact-revised.json", "r") as f:
         data = json.load(f)
 
     for entry in data:

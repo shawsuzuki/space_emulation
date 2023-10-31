@@ -3,7 +3,7 @@ services:
   earth_surface_1:
     build:
       context: ./
-      dockerfile: dockerfile/Dockerfile
+      dockerfile: input/Dockerfile
     container_name: earth_surface_1
     networks:
       fixed_compose_network:
@@ -16,7 +16,7 @@ services:
   earth_surface_2:
     build:
       context: ./
-      dockerfile: dockerfile/Dockerfile
+      dockerfile: input/Dockerfile
     container_name: earth_surface_2
     networks:
       fixed_compose_network:
@@ -29,7 +29,7 @@ services:
   earth_orbit_1:
     build:
       context: ./
-      dockerfile: dockerfile/Dockerfile
+      dockerfile: input/Dockerfile
     container_name: earth_orbit_1
     networks:
       fixed_compose_network:
@@ -39,69 +39,30 @@ services:
     - 50003:5001/udp
     tty: true
     privileged: true
-  earth_orbit_2:
-    build:
-      context: ./
-      dockerfile: dockerfile/Dockerfile
-    container_name: earth_orbit_2
-    networks:
-      fixed_compose_network:
-        ipv4_address: 172.20.2.2
-    ports:
-    - 50004:5001/tcp
-    - 50004:5001/udp
-    tty: true
-    privileged: true
-  earth_orbit_3:
-    build:
-      context: ./
-      dockerfile: dockerfile/Dockerfile
-    container_name: earth_orbit_3
-    networks:
-      fixed_compose_network:
-        ipv4_address: 172.20.2.3
-    ports:
-    - 50005:5001/tcp
-    - 50005:5001/udp
-    tty: true
-    privileged: true
   moon_surface_1:
     build:
       context: ./
-      dockerfile: dockerfile/Dockerfile
+      dockerfile: input/Dockerfile
     container_name: moon_surface_1
     networks:
       fixed_compose_network:
         ipv4_address: 172.20.3.1
     ports:
-    - 50006:5001/tcp
-    - 50006:5001/udp
-    tty: true
-    privileged: true
-  moon_surface_2:
-    build:
-      context: ./
-      dockerfile: dockerfile/Dockerfile
-    container_name: moon_surface_2
-    networks:
-      fixed_compose_network:
-        ipv4_address: 172.20.3.2
-    ports:
-    - 50007:5001/tcp
-    - 50007:5001/udp
+    - 50004:5001/tcp
+    - 50004:5001/udp
     tty: true
     privileged: true
   moon_orbit_1:
     build:
       context: ./
-      dockerfile: dockerfile/Dockerfile
+      dockerfile: input/Dockerfile
     container_name: moon_orbit_1
     networks:
       fixed_compose_network:
         ipv4_address: 172.20.4.1
     ports:
-    - 50008:5001/tcp
-    - 50008:5001/udp
+    - 50005:5001/tcp
+    - 50005:5001/udp
     tty: true
     privileged: true
 networks:

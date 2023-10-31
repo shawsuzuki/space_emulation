@@ -2,4 +2,4 @@
 
 modprobe ifb
 ip link set dev ifb0 up
-python3 delay_insertion.py
+python3 ./delay_insertion/insert_do.py

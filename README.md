@@ -13,5 +13,8 @@ dockerfile：もともとION動かすように作ったものを流用してい�
 ## 使い方
 
 ①  emulation_configure.configの、衛星数、開始IPアドレスを調整（現在は使えるアドレス空間はとりあえず172.20.0.0/16になっていますのでその内部でお願いします）
-②　docker compose build --no-cache
-③　docker compose up -d 
+②　python3 docker_maker.py
+③　docker compose build --no-cache
+④　docker compose up -d
+
+## 遅延の挿入
