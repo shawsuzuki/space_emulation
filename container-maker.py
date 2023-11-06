@@ -1,88 +1,77 @@
-# Version: 1.1
 import configparser
-import yaml
 import ipaddress
+from pathlib import Path
+import yaml
 
-CONFIG_FILE = './input/emulation.config'
-OUTPUT_FILE = 'docker-compose.yml'
+# Configファイルを読み込む
+config_path = Path.cwd() / 'input' / 'emulation.config'
+config = configparser.ConfigParser()
+config.read(config_path)
 
-def generate_docker_compose():
-    config = configparser.ConfigParser()
-    config.read(CONFIG_FILE)
+# 各ネットワークごとのIPアドレス割り当てのカウンターを設定
+network_ip_counters = {}
 
-    services = {}
-    base_port = 50000
-    used_ip_ranges = []
+# ネットワークとサービスの設定を構築
+networks = {}
+services = {}
+host_port = 50000  # ホストポートの開始番号
 
-    for idx, section in enumerate(config.sections()):
-        ipv4_cidr = config.get(section, 'IPv4アドレス')
-        sat_num = config.getint(section, '衛星数')
-        
-        network = ipaddress.ip_network(ipv4_cidr, strict=False)
-
-        # エラーチェック1: 利用可能なIPアドレス数が足りるか確認
-        if len(list(network.hosts())) < sat_num:
-            raise ValueError(f"{section}のIPアドレス範囲{ipv4_cidr}は要求されるコンテナ数{sat_num}に対して不足しています。")
-        
-        # エラーチェック2: 既に使用されたIPアドレス範囲との重複確認
-        for used_range in used_ip_ranges:
-            if network.overlaps(used_range):
-                raise ValueError(f"{section}のIPアドレス範囲{ipv4_cidr}は既に使用されています。")
-        
-        used_ip_ranges.append(network)
-
-        current_ip = network.network_address + 1  # start from the first usable IP
-
-        for i in range(1, sat_num + 1):
-            service_name = f"{section}_{i}"
-            port = base_port + i
-
-            service = {
-                'build': {
-                    'context': './',
-                    'dockerfile': 'input/Dockerfile'
-                },
-                'container_name': service_name,
-                'networks': {
-                    'fixed_compose_network': {
-                        'ipv4_address': str(current_ip)
-                    }
-                },
-                'ports': [
-                    f"{port}:5001/tcp",
-                    f"{port}:5001/udp"
-                ],
-                'tty': True,
-                'privileged': True
-            }
-            services[service_name] = service
-            current_ip += 1  # increment the IP address for the next container
-
-        base_port += sat_num
-
-    return {
-        'version': '5.1',
-        'services': services,
-        'networks': {
-            'fixed_compose_network': {
-                'ipam': {
-                    'driver': 'default',
-                    'config': [{
-                        'subnet': '172.20.0.0/16'
-                    }]
-                }
-            }
+# 全てのセクションのサブネットを事前に設定しておく
+for section in config.sections():
+    network_name = f"{section}_network"
+    subnet = config.get(section, 'IPv4_address')
+    networks[network_name] = {
+        'ipam': {
+            'config': [{'subnet': subnet}]
         }
     }
+    # 各サブネットの24ビット目が1の最初のホストアドレスをカウンターに設定
+    subnet_base = ipaddress.ip_network(subnet)
+    first_ip = ipaddress.IPv4Address(int(subnet_base.network_address+1) | (1 << 8))
+    network_ip_counters[network_name] = first_ip
 
-def main():
-    try:
-        docker_compose = generate_docker_compose()
-        with open(OUTPUT_FILE, 'w') as file:
-            yaml_data = yaml.dump(docker_compose, default_flow_style=False, sort_keys=False)
-            file.write(yaml_data)
-    except ValueError as e:
-        print(f"エラー: {e}")
+# セクションごとにサービスを設定
+for section in config.sections():
+    network_name = f"{section}_network"
+    num_satellite = config.getint(section, 'num_satellite')
 
-if __name__ == "__main__":
-    main()
+    for i in range(1, num_satellite + 1):
+        service_name = f"{section}_{i}"
+        container_name = service_name
+        host_port += 1  # ホストポートをインクリメント
+
+        service_networks = {}
+
+        # 全ネットワークに対してサービスを登録し、IPアドレスを割り当てる
+        for net_name, counter in network_ip_counters.items():
+            service_networks[net_name] = {
+                'ipv4_address': str(counter)
+            }
+            # 各ネットワークカウンターをインクリメント
+            network_ip_counters[net_name] = ipaddress.IPv4Address(int(counter) + 1)
+
+        # サービス設定を追加
+        services[service_name] = {
+            'build': {
+                'context': './',
+                'dockerfile': './input/Dockerfile',
+            },
+            'container_name': container_name,
+            'networks': service_networks,
+            'ports': [f"{host_port}:5001"],
+            'privileged': True,
+            'tty': True,
+        }
+
+# docker-composeファイル用のデータ構造
+docker_compose_data = {
+    'version': '3.8',
+    'services': services,
+    'networks': networks,
+}
+
+# YAMLファイルとしてdocker-compose.ymlを書き出し
+with open('docker-compose.yml', 'w') as file:
+    yaml.dump(docker_compose_data, file, default_flow_style=False)
+
+print('docker-compose.yml has been generated.')
