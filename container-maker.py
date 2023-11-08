@@ -1,77 +1,93 @@
-import configparser
-import ipaddress
-from pathlib import Path
 import yaml
+import configparser
+from itertools import combinations
 
-# Configファイルを読み込む
-config_path = Path.cwd() / 'input' / 'emulation.config'
-config = configparser.ConfigParser()
-config.read(config_path)
+# Function to load and parse the configuration file
+def load_config(filename):
+    config = configparser.ConfigParser()
+    config.read(filename)
+    return {section: dict(config.items(section)) for section in config.sections()}
 
-# 各ネットワークごとのIPアドレス割り当てのカウンターを設定
-network_ip_counters = {}
+# Function to create subnet strings
+def create_subnet_string(index):
+    return f"172.0.{index}.0/24"
 
-# ネットワークとサービスの設定を構築
+# Load the configuration from the input directory
+config = load_config('input/emulation.config')
+
+# Parse the number of satellites from config and create a list of containers
+satellites = {sat: int(details['num_satellite']) for sat, details in config.items()}
+containers = [f"{sat}{i+1}" for sat, num in satellites.items() for i in range(num)]
+
+# Create all possible pairs for the networks
+network_pairs = list(combinations(containers, 2))
+
+# Initialize network configurations
 networks = {}
-services = {}
-host_port = 50000  # ホストポートの開始番号
+subnet_index = 1
 
-# 全てのセクションのサブネットを事前に設定しておく
-for section in config.sections():
-    network_name = f"{section}_network"
-    subnet = config.get(section, 'IPv4_address')
+for pair in network_pairs:
+    # Create a network name based on the sorted pair of container names
+    network_name = "_".join(sorted(pair)) + "_network"
     networks[network_name] = {
         'ipam': {
-            'config': [{'subnet': subnet}]
+            'config': [{'subnet': create_subnet_string(subnet_index)}]
         }
     }
-    # 各サブネットの24ビット目が1の最初のホストアドレスをカウンターに設定
-    subnet_base = ipaddress.ip_network(subnet)
-    first_ip = ipaddress.IPv4Address(int(subnet_base.network_address+1) | (1 << 8))
-    network_ip_counters[network_name] = first_ip
+    subnet_index += 1
 
-# セクションごとにサービスを設定
-for section in config.sections():
-    network_name = f"{section}_network"
-    num_satellite = config.getint(section, 'num_satellite')
+# Initialize a dictionary to track the last assigned IP address for each network
+last_ip_addresses = {network: 2 for network in networks}
 
-    for i in range(1, num_satellite + 1):
-        service_name = f"{section}_{i}"
-        container_name = service_name
-        host_port += 1  # ホストポートをインクリメント
+# Initialize service configurations
+services = {}
+port_counter = 50000  # Start assigning ports from 50000
 
-        service_networks = {}
+for container in containers:
+    # Calculate connected networks based on the existing network pairs
+    connected_networks = {
+        "_".join(sorted([container, other])) + "_network"
+        for other in containers if container != other
+    }
+    # Sort networks to ensure consistent IP assignment
+    sorted_networks = sorted(connected_networks)
 
-        # 全ネットワークに対してサービスを登録し、IPアドレスを割り当てる
-        for net_name, counter in network_ip_counters.items():
-            service_networks[net_name] = {
-                'ipv4_address': str(counter)
-            }
-            # 各ネットワークカウンターをインクリメント
-            network_ip_counters[net_name] = ipaddress.IPv4Address(int(counter) + 1)
+    # Each container's network config with unique IP address assignment
+    network_config = {}
+    for network in sorted_networks:
+        subnet_parts = networks[network]['ipam']['config'][0]['subnet'].split('.')
+        # Increment the last IP for this network
+        last_ip = last_ip_addresses[network]
+        base_ip = f"{subnet_parts[0]}.{subnet_parts[1]}.{subnet_parts[2]}.{last_ip}"
+        network_config[network] = {'ipv4_address': base_ip}
+        # Increment the IP address for the next assignment in this network
+        last_ip_addresses[network] += 1
 
-        # サービス設定を追加
-        services[service_name] = {
-            'build': {
-                'context': './',
-                'dockerfile': './input/Dockerfile',
-            },
-            'container_name': container_name,
-            'networks': service_networks,
-            'ports': [f"{host_port}:5001"],
-            'privileged': True,
-            'tty': True,
-        }
+    # Each container's complete config including ports
+    services[container] = {
+        'build': {
+            'context': '.',
+            'dockerfile': './input/Dockerfile',
+        },
+        'container_name': container,
+        'networks': network_config,
+        'ports': [f"{port_counter}:{5001}"],
+        'privileged': True,
+        'tty': True
+    }
+    port_counter += 1  # Increment the port counter for the next container
 
-# docker-composeファイル用のデータ構造
-docker_compose_data = {
-    'version': '3.8',
+
+# Docker-compose structure
+docker_compose_structure = {
+    'version': '3.7',
     'services': services,
-    'networks': networks,
+    'networks': networks
 }
 
-# YAMLファイルとしてdocker-compose.ymlを書き出し
-with open('docker-compose.yml', 'w') as file:
-    yaml.dump(docker_compose_data, file, default_flow_style=False)
+# Write the docker-compose structure to a file
+docker_compose_file = 'docker-compose.yml'
+with open(docker_compose_file, 'w') as file:
+    yaml.dump(docker_compose_structure, file, default_flow_style=False)
 
-print('docker-compose.yml has been generated.')
+print(f"{docker_compose_file} has been generated.")
