@@ -1,1 +1,1 @@
-python3 ./contactgraph/contact_revise.py
+python3 ./contactgraph/contact-revise.py

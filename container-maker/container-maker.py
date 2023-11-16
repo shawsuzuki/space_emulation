@@ -12,8 +12,20 @@ def load_config(filename):
 def create_subnet_string(index):
     return f"172.0.{index}.0/24"
 
+# Function to generate nftables.sh script
+def generate_nftables_script(containers):
+    script_lines = ["#!/bin/bash"]
+    for container in containers:
+        for x in range(len(containers) - 1):
+            for y in range(x + 1, len(containers)):
+                script_lines.append(f"docker exec -it {container} iptables -A FORWARD -i en{x} -o en{y} -j ACCEPT")
+                script_lines.append(f"docker exec -it {container} iptables -A FORWARD -i en{y} -o en{x} -j ACCEPT")
+
+    with open('nftables.sh', 'w') as file:
+        file.write('\n'.join(script_lines))
+        
 # Load the configuration from the input directory
-config = load_config('input/emulation.config')
+config = load_config('../input/emulation.config')
 
 # Parse the number of satellites from config and create a list of containers
 satellites = {sat: int(details['num_satellite']) for sat, details in config.items()}
@@ -67,7 +79,7 @@ for container in containers:
     services[container] = {
         'build': {
             'context': '.',
-            'dockerfile': './input/Dockerfile',
+            'dockerfile': './container-maker/Dockerfile',
         },
         'container_name': container,
         'networks': network_config,
@@ -86,7 +98,7 @@ docker_compose_structure = {
 }
 
 # Write the docker-compose structure to a file
-docker_compose_file = 'docker-compose.yml'
+docker_compose_file = '../docker-compose.yml'
 with open(docker_compose_file, 'w') as file:
     yaml.dump(docker_compose_structure, file, default_flow_style=False)
 
