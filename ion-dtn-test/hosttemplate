@@ -1,0 +1,128 @@
+##begin ionadmin
+1 149 ''              #２つ目の1はnode number(ipn:1)
+s                    # start ion node
+a contact +1 +3600 149 149 100000     #通信が出来る時間は、コマンド実行1秒後から3600秒後までの間、149から150に対して100000 bytes/second送る
+a contact +1 +3600 149 150 100000
+a contact +1 +3600 150 149 100000
+a contact +1 +3600 150 150 100000
+a contact +1 +3600 150 151 100000
+a contact +1 +3600 151 150 100000
+a contact +1 +3600 151 151 100000
+
+a range +1 +3600 149 149 1
+a range +1 +3600 149 150 1
+a range +1 +3600 150 150 1
+a range +1 +3600 150 151 1
+a range +1 +3600 151 151 1
+
+m production 1000000
+m consumption 1000000
+##end ionadmin
+
+
+##begin ltpadmin
+1 32 131072 # 32 session/sec  131072 byte/session　一回のセッションで送ることの出来るブロックサイズ
+
+# a span <engine ID#> <max export sessions> \ <max import sessions> <max segment size> <aggregation size threshold> 
+#\ <aggregation time limit> '<LSO command>' [queuing latency, in seconds]
+# 例 a span 149 32 32 1400 10000 1 'udplso 172.16.123.149:1113' 300
+a span 149 32 32 1400 10000 1 'udplso 192.168.10.149:1113' 300    #自分自身に送信するためのリンクを作成
+a span 150 32 32 1400 10000 1 'udplso 192.168.10.150:1113' 300    #ipn:150.0に送信するためのリンクを作成
+
+s 'udplsi 192.168.10.149:1113'    #受信する
+##end ltpadmin
+
+
+## begin bpadmin
+1 ipn:149.0             #Use ipn:149.0 as the custodian endpoint of this node. custodian endpointとは中継と一時的な保管を行う概念
+
+a scheme ipn 'ipnfw' 'ipnadminep'
+a endpoint ipn:149.0 q
+a endpoint ipn:149.1 q      #ipn:149.0はcustodian endpoint、ipn:149.1, ipn:149.2はアプリケーションのendpoint(bpsinkなど)
+a endpoint ipn:149.2 q
+
+#LTP(Licklider Ttransmission Protocol)は、IPNの下位層のプロトコルを指している。以下のそれぞれのコマンドは、
+#LTPプロトコルの設定、induct(受信)、outduct(送信)に関連している
+a Protocol ltp 1400 100     #トランスミッション要領は、ペイロードとして1400バイト、ヘッダとして100バイト(UDP上のイーサネットフレームを使う場合)
+a induct ltp 149 ltpcli     #LTPプロトコルを使用してバンドルを受け入れるインダクトを追加するコマンド
+a outduct ltp 149 ltpclo    #LTPプロトコルを使用してバンドルを自分自身に送信するアウトダクトを追加するコマンド
+a outduct ltp 150 ltpclo    #LTPプロトコルを使用してバンドルをipn:150.0に送信するアウトダクトを追加するコマンド
+## end bpadmin
+
+
+## begin ipnadmin
+# a service 0 admin
+# a service 1 echo      これらはサービス番号(ipn:149.x xの部分)とサービス名を関連付けるコマンドです
+
+a plan 149 ltp/149      #a plan <node nbr> <duct expression> [<xmit rate>]
+a plan 150 ltp/150      #宛先ノードから宛先のグループに対して送信するためのプラン(ルーティングテーブル)を追加するコマンド
+a plan 151 ltp/151
+## end ipnadmin
+
+#作ったhost.rcの使い方
+# killm                     一番初めに動いているionをkillする
+# ionstart -I host.rc　     host.rcを使ってionを起動する
+# ss -panu                  udpのポートを確認する
+# ipcs                      ION servicesの状態を確認する
+
+# 149で以下のコマンドを実行する
+# echo "This is Server 149 calling Server 150" | bpsource ipn:150.1
+# 150で以下のコマンドを実行する
+# bpsink ipn:150.1
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+##begin ionadmin
+1 149 ''
+s
+a contact +1 +3600 149 149 100000
+a contact +1 +3600 149 150 100000
+a contact +1 +3600 150 149 100000
+a contact +1 +3600 150 150 100000
+a contact +1 +3600 150 151 100000
+a contact +1 +3600 151 150 100000
+a contact +1 +3600 151 151 100000
+
+a range +1 +3600 149 149 1
+a range +1 +3600 149 150 1
+a range +1 +3600 150 150 1
+a range +1 +3600 150 151 1
+a range +1 +3600 151 151 1
+
+m production 1000000
+m consumption 1000000
+##end ionadmin
+
+
+##begin ltpadmin
+1 32 131072
+
+a span 149 32 32 1400 10000 1 'udplso 192.168.10.149:1113' 300
+a span 150 32 32 1400 10000 1 'udplso 192.168.10.150:1113' 300
+
+s 'udplsi 192.168.10.149:1113'
+##end ltpadmin
+
+
+## begin bpadmin
+1 ipn:149.0
+
+a scheme ipn 'ipnfw' 'ipnadminep'
+a endpoint ipn:149.0 q
+a endpoint ipn:149.1 q
+a endpoint ipn:149.2 q
+
+a Protocol ltp 1400 100
+a induct ltp 149 ltpcli
+a outduct ltp 149 ltpclo
+a outduct ltp 150 ltpclo
+## end bpadmin
+
+
+## begin ipnadmin
+a plan 149 ltp/149
+a plan 150 ltp/150
+## end ipnadmin
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -12,8 +12,8 @@
         "Contact": "2",
         "Sender": "earth_orbit_1",
         "Recvr": "moon_orbit_1",
-        "From": "20",
-        "Until": "30",
+        "From": "30",
+        "Until": "40",
         "Rate": "1000",
         "delay": 2600
     },
@@ -21,8 +21,8 @@
         "Contact": "3",
         "Sender": "moon_orbit_1",
         "Recvr": "moon_surface_1",
-        "From": "30",
-        "Until": "40",
+        "From": "20",
+        "Until": "30",
         "Rate": "1000",
         "delay": 300
     }
